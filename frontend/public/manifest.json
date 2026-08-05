@@ -1,0 +1,21 @@
+{
+  "name": "Enterokinase by Anthem Biosciences",
+  "short_name": "Enterokinase",
+  "description": "Buy recombinant enterokinase for precise fusion protein tag removal. GMP compliant, quality tested by Anthem Biosciences.",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#0a0f18",
+  "background_color": "#f8f9fa",
+  "icons": [
+    {
+      "src": "/assets/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Core Authentication Checks
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // RBAC Role Checks
+    function getRole() {
+      return ('role' in request.auth.token) ? request.auth.token.role : 'user';
+    }
+    
+    function hasRole(role) {
+      return isAuthenticated() && getRole() == role;
+    }
+    
+    function hasAnyRole(roles) {
+      return isAuthenticated() && (getRole() in roles);
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      // Standard user can only access their own profile. Admin/Manager can access all.
+      allow read: if isAuthenticated() && (
+        request.auth.uid == userId || 
+        hasAnyRole(['admin', 'manager']) ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Employee'
+      );
+      
+      allow create, delete: if isAuthenticated() && (
+        request.auth.uid == userId || 
+        hasAnyRole(['admin', 'manager']) ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin'
+      );
+      
+      // Prevent privilege escalation: Users cannot update their own role
+      allow update: if isAuthenticated() && (
+        hasAnyRole(['admin', 'manager']) ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin' ||
+        (request.auth.uid == userId && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']))
+      );
+    }
+
+    // Products Collection
+    match /products/{productId} {
+      // Public read
+      allow read: if true;
+      // Admin and Product Manager write access
+      allow write: if hasAnyRole(['admin', 'product_manager']);
+    }
+
+    // Orders Collection (writes handled exclusively by Admin SDK via Python backend)
+    match /orders/{orderId} {
+      // Customers read their own, Admin/Manager read all
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid || 
+        hasAnyRole(['admin', 'manager']) ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Employee'
+      );
+      
+      // Allow Admins and Employees to update the delivery status directly
+      // Allow customers to ONLY cancel their own orders (no tampering with prices or items)
+      allow update: if isAuthenticated() && (
+        hasAnyRole(['admin', 'manager']) ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Employee' ||
+        (resource.data.userId == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) && request.resource.data.status == 'Cancelled')
+      );
+      
+      allow create: if false;
+      allow delete: if isAuthenticated() && (
+        hasAnyRole(['admin', 'manager']) ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Employee'
+      );
+
+    // Notifications Collection
+    match /notifications/{notificationId} {
+      allow create: if isAuthenticated();
+      allow read, update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+  }
+}

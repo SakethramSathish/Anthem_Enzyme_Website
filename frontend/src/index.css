@@ -1,0 +1,21 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=DM+Serif+Display:ital@0;1&display=swap');
+
+@theme {
+  --font-sans: 'DM Sans', sans-serif;
+  --font-serif: 'DM Serif Display', serif;
+
+  --text-xs: 0.8125rem;  /* 13px (+1px) */
+  --text-sm: 0.9375rem;  /* 15px (+1px) */
+  --text-base: 1.0625rem; /* 17px (+1px) */
+  --text-lg: 1.1875rem;  /* 19px (+1px) */
+  --text-xl: 1.3125rem;  /* 21px (+1px) */
+}
+
+@custom-variant dark (&:is(.dark *));
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100;
+  }
+}
