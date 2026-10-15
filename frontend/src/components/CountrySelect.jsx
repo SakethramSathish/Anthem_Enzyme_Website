@@ -24,7 +24,7 @@ export default function CountrySelect({ value, onChange, className = '' }) {
     <div ref={wrapperRef} className={`relative ${className}`}>
       <div 
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 bg-[#F8F9FA] dark:bg-slate-800 border border-[#E9ECEF] dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-black dark:text-white text-[15px] cursor-pointer flex items-center justify-between"
+        className="w-full px-4 py-3 bg-[#F8F9FA] dark:bg-slate-800 border border-[#E9ECEF] dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-black dark:text-white text-[17px] cursor-pointer flex items-center justify-between"
       >
         <div className="flex items-center gap-3">
           {selectedCountry ? (
@@ -44,7 +44,7 @@ export default function CountrySelect({ value, onChange, className = '' }) {
           <div className="p-3 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50">
             <input 
               type="text" 
-              className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg text-[14px] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all placeholder:text-slate-400"
+              className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg text-[16px] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all placeholder:text-slate-400"
               placeholder="Search country..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -61,7 +61,7 @@ export default function CountrySelect({ value, onChange, className = '' }) {
                   className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors ${value === c.name ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 font-medium' : 'text-slate-700 dark:text-slate-300'}`}
                 >
                   <img src={`https://flagcdn.com/w20/${c.code.toLowerCase()}.png`} srcSet={`https://flagcdn.com/w40/${c.code.toLowerCase()}.png 2x`} width="20" alt={c.name} className="flex-shrink-0 rounded-sm shadow-[0_0_2px_rgba(0,0,0,0.2)]" />
-                  <span className="text-[14px] truncate">{c.name}</span>
+                  <span className="text-[16px] truncate">{c.name}</span>
                 </div>
               ))
             ) : (

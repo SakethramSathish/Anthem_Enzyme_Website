@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth, db } from '../firebase';
 import { onAuthStateChanged, getRedirectResult } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 
 const AuthContext = createContext();
 
@@ -58,29 +58,31 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    let unsubscribeDoc = null;
+
     const timeout = setTimeout(() => {
       setLoading(false);
     }, 3000);
 
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
+      if (unsubscribeDoc) {
+        unsubscribeDoc();
+        unsubscribeDoc = null;
+      }
+
       setUser(currentUser);
+
       if (currentUser) {
-        try {
-          const claimsPromise = currentUser.getIdTokenResult();
-          const docRef = doc(db, 'users', currentUser.uid);
-          const docPromise = getDoc(docRef);
+        const docRef = doc(db, 'users', currentUser.uid);
 
-          const [tokenResult, docSnap] = await Promise.allSettled([claimsPromise, docPromise]);
-
-          if (tokenResult.status === 'fulfilled') {
-            setRole(tokenResult.value?.claims?.role || 'user');
-          } else {
-            setRole('user');
-          }
-
-          if (docSnap.status === 'fulfilled' && docSnap.value?.exists()) {
-            const data = docSnap.value.data();
+        unsubscribeDoc = onSnapshot(docRef, async (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
             setUserData(data);
+            const isUserAdmin = data.role?.toLowerCase() === 'admin';
+            const resolvedRole = isUserAdmin ? 'admin' : (data.role?.toLowerCase() === 'customer' ? 'user' : (data.role?.toLowerCase() || 'user'));
+            setRole(resolvedRole);
+
             if (!data.organization && currentUser.providerData?.some(p => p.providerId === 'google.com')) {
               openAuthModal('google-details');
             }
@@ -98,26 +100,32 @@ export function AuthProvider({ children }) {
               console.warn("Could not save initial user doc:", e);
             }
             setUserData(newUserData);
+            setRole('user');
             if (currentUser.providerData?.some(p => p.providerId === 'google.com')) {
               openAuthModal('google-details');
             }
           }
-        } catch (error) {
-          console.error("Error fetching user data/claims:", error);
+          clearTimeout(timeout);
+          setLoading(false);
+        }, (error) => {
+          console.error("Error in real-time user doc snapshot:", error);
           setUserData(null);
           setRole('user');
-        }
+          clearTimeout(timeout);
+          setLoading(false);
+        });
       } else {
         setUserData(null);
         setRole(null);
+        clearTimeout(timeout);
+        setLoading(false);
       }
-      clearTimeout(timeout);
-      setLoading(false);
     });
 
     return () => {
       clearTimeout(timeout);
-      unsubscribe();
+      if (unsubscribeDoc) unsubscribeDoc();
+      unsubscribeAuth();
     };
   }, []);
 

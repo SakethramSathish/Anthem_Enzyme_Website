@@ -318,15 +318,15 @@ export default function Invoice({ user }) {
   return (
     <>
       <SEOHead title="Invoice" noIndex={true} />
-    <div className="min-h-[calc(100vh-72px)] bg-[#F8F9FA] dark:bg-slate-950 py-12 px-4 sm:px-6 lg:px-8 flex flex-col items-center">
+    <div className="min-h-[calc(100vh-64px)] sm:min-h-[calc(100vh-72px)] bg-[#F8F9FA] dark:bg-slate-950 py-6 sm:py-12 px-3 sm:px-6 lg:px-8 flex flex-col items-center">
       
-      <div className="w-full max-w-3xl flex justify-between items-center mb-6">
-        <Link to="/" className="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium">
+      <div className="w-full max-w-3xl flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-4 sm:mb-6">
+        <Link to="/" className="text-blue-600 dark:text-blue-400 hover:underline text-sm font-semibold flex items-center gap-1">
           &larr; Back to Home
         </Link>
         <button 
           onClick={handleDownloadPdf}
-          className="flex items-center gap-2 px-6 py-2.5 bg-[#1A4BDB] text-white rounded-md shadow-sm hover:bg-blue-700 transition-colors font-medium text-sm cursor-pointer"
+          className="flex items-center justify-center gap-2 px-6 py-3 bg-[#1A4BDB] hover:bg-blue-700 text-white rounded-xl shadow-sm transition-all font-bold text-sm cursor-pointer active:scale-[0.98]"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
@@ -337,61 +337,61 @@ export default function Invoice({ user }) {
 
       <div 
         ref={invoiceRef} 
-        className="w-full max-w-3xl bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-8 sm:p-12 transition-colors duration-300"
+        className="w-full max-w-3xl bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 sm:p-8 md:p-12 transition-colors duration-300"
       >
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-200 dark:border-slate-800 pb-8 mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-200 dark:border-slate-800 pb-6 sm:pb-8 mb-6 sm:mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Enterokinase</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Order Invoice</p>
+            <h1 className="text-xl sm:text-2xl font-serif font-bold text-slate-900 dark:text-white tracking-tight">Enterokinase</h1>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">Order Invoice</p>
           </div>
           <div className="mt-4 sm:mt-0 text-left sm:text-right">
-            <div className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-bold uppercase tracking-wider mb-2">
+            <div className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider mb-2">
               Payment Successful
             </div>
-            <p className="text-sm text-slate-900 dark:text-white font-medium">Invoice: #{invoiceId || shipmentId}</p>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Date: {orderDate}</p>
+            <p className="text-xs sm:text-sm text-slate-900 dark:text-white font-medium">Invoice: #{invoiceId || shipmentId}</p>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Date: {orderDate}</p>
           </div>
         </div>
 
         {/* Customer Details */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 mb-8 sm:mb-10">
           <div>
-            <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">Billed To</h3>
-            <p className="text-sm font-medium text-slate-900 dark:text-white">{customerName}</p>
-            {shippingDetails.organization && <p className="text-sm text-slate-600 dark:text-slate-400">{shippingDetails.organization}</p>}
-            <p className="text-sm text-slate-600 dark:text-slate-400">{customerEmail}</p>
-            <p className="text-sm text-slate-600 dark:text-slate-400">{shippingDetails.phone}</p>
+            <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 sm:mb-3">Billed To</h3>
+            <p className="text-sm font-semibold text-slate-900 dark:text-white">{customerName}</p>
+            {shippingDetails.organization && <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">{shippingDetails.organization}</p>}
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">{customerEmail}</p>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">{shippingDetails.phone}</p>
           </div>
           <div>
-            <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">Shipped To</h3>
-            <p className="text-sm text-slate-600 dark:text-slate-400">{shippingDetails.address}</p>
-            <p className="text-sm text-slate-600 dark:text-slate-400">{shippingDetails.city}, {shippingDetails.pinCode}</p>
-            <p className="text-sm text-slate-600 dark:text-slate-400">{shippingDetails.country}</p>
+            <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 sm:mb-3">Shipped To</h3>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">{shippingDetails.address}</p>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">{shippingDetails.city}, {shippingDetails.pinCode}</p>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">{shippingDetails.country}</p>
           </div>
         </div>
 
         {/* Products Table */}
-        <div className="mb-8 overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+        <div className="mb-6 sm:mb-8 overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[320px]">
             <thead>
               <tr className="border-b-2 border-slate-100 dark:border-slate-800">
-                <th className="py-3 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Item</th>
-                <th className="py-3 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-center">Qty</th>
-                <th className="py-3 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">Price</th>
-                <th className="py-3 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">Total</th>
+                <th className="py-2.5 text-[11px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Item</th>
+                <th className="py-2.5 text-[11px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-center">Qty</th>
+                <th className="py-2.5 text-[11px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">Price</th>
+                <th className="py-2.5 text-[11px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">Total</th>
               </tr>
             </thead>
             <tbody>
               {products.map((item, idx) => (
                 <tr key={idx} className="border-b border-slate-100 dark:border-slate-800/50">
-                  <td className="py-4">
-                    <p className="text-sm font-medium text-slate-900 dark:text-white">{item.name}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{item.unitLabel}</p>
+                  <td className="py-3.5">
+                    <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white">{item.name}</p>
+                    <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">{item.unitLabel}</p>
                   </td>
-                  <td className="py-4 text-center text-sm text-slate-600 dark:text-slate-400">{item.quantity}</td>
-                  <td className="py-4 text-right text-sm text-slate-600 dark:text-slate-400">{formatInvoiceCurrency(item.price)}</td>
-                  <td className="py-4 text-right text-sm font-medium text-slate-900 dark:text-white">{formatInvoiceCurrency(item.price * item.quantity)}</td>
+                  <td className="py-3.5 text-center text-xs sm:text-sm text-slate-600 dark:text-slate-400">{item.quantity}</td>
+                  <td className="py-3.5 text-right text-xs sm:text-sm text-slate-600 dark:text-slate-400 whitespace-nowrap">{formatInvoiceCurrency(item.price)}</td>
+                  <td className="py-3.5 text-right text-xs sm:text-sm font-bold text-slate-900 dark:text-white whitespace-nowrap">{formatInvoiceCurrency(item.price * item.quantity)}</td>
                 </tr>
               ))}
             </tbody>
@@ -399,31 +399,31 @@ export default function Invoice({ user }) {
         </div>
 
         {/* Totals */}
-        <div className="flex justify-end mb-8">
-          <div className="w-full sm:w-1/2 lg:w-1/3 space-y-3">
-            <div className="flex justify-between text-sm">
+        <div className="flex justify-end mb-6 sm:mb-8">
+          <div className="w-full sm:w-1/2 lg:w-1/3 space-y-2.5">
+            <div className="flex justify-between text-xs sm:text-sm">
               <span className="text-slate-500 dark:text-slate-400">Subtotal</span>
               <span className="text-slate-900 dark:text-white font-medium">{formatInvoiceCurrency(totals.subtotal)}</span>
             </div>
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between text-xs sm:text-sm">
               <span className="text-slate-500 dark:text-slate-400">Shipping</span>
               <span className="text-slate-900 dark:text-white font-medium">{formatInvoiceCurrency(totals.shippingCost)}</span>
             </div>
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between text-xs sm:text-sm">
               <span className="text-slate-500 dark:text-slate-400">GST {orderCurrency === 'INR' ? '(18%)' : ''}</span>
               <span className="text-slate-900 dark:text-white font-medium">{formatInvoiceCurrency(totals.gst)}</span>
             </div>
             <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-between">
-              <span className="text-base font-bold text-slate-900 dark:text-white">Total Amount</span>
-              <span className="text-lg font-bold text-[#1A4BDB] dark:text-blue-400">{formatInvoiceCurrency(totals.total)}</span>
+              <span className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">Total Amount</span>
+              <span className="text-base sm:text-lg font-bold text-[#1A4BDB] dark:text-blue-400">{formatInvoiceCurrency(totals.total)}</span>
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="pt-8 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 dark:text-slate-400">
-          <p>Payment ID: <span className="font-mono bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-slate-700 dark:text-slate-300">{paymentId}</span></p>
-          <p className="mt-2 sm:mt-0">Thank you for your order!</p>
+        <div className="pt-6 sm:pt-8 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+          <p className="break-all">Payment ID: <span className="font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-700 dark:text-slate-300">{paymentId}</span></p>
+          <p className="mt-1 sm:mt-0">Thank you for your order!</p>
         </div>
 
       </div>

@@ -39,6 +39,12 @@ async def init_session(request: Request, fallback_country: str = ""):
             country_code = "IN"
         else:
             country_code = "US"
+
+    # In development mode, default to India if no country could be determined
+    is_dev = os.getenv("ENV", "development").lower() == "development"
+    if not country_code and is_dev:
+        country_code = "IN"
+
     # Allow testing spoof via a specific header
     test_country = request.headers.get("X-Test-Country")
     if test_country:

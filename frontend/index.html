@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://*.razorpay.com https://cdn.razorpay.com https://apis.google.com https://www.googleapis.com https://www.gstatic.com https://www.gstatic.com/recaptcha/ https://*.firebaseapp.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: blob: https://firebasestorage.googleapis.com https://*.googleusercontent.com https://lh3.googleusercontent.com https://enterokinase.in; frame-src 'self' https://*.razorpay.com https://api.razorpay.com https://checkout.razorpay.com https://anthem-enzyme-website.firebaseapp.com https://*.firebaseapp.com https://accounts.google.com https://apis.google.com https://www.google.com; connect-src 'self' https: wss: http://localhost:* http://127.0.0.1:* https://*.razorpay.com https://lumberjack.razorpay.com https://api.anthem-enzyme.com https://api.enterokinase.in https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.firebaseapp.com https://apis.google.com https://www.googleapis.com https://firestore.googleapis.com https://*.firebaseio.com;">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
 
     <!-- Primary Meta Tags -->
     <title>Enterokinase by Anthem Biosciences | Recombinant Enzyme for Tag Removal</title>
@@ -18,36 +18,29 @@
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "Product",
-      "name": "Recombinant Enterokinase",
-      "image": "https://enterokinase.in/assets/enterokinease-vial.jpeg",
-      "description": "High-purity recombinant enterokinase for precise cleavage of fusion proteins. GMP compliant, quality tested.",
-      "brand": {
-        "@type": "Brand",
-        "name": "Anthem Biosciences"
-      },
-      "offers": {
-        "@type": "AggregateOffer",
-        "url": "https://enterokinase.in/product",
-        "priceCurrency": "INR",
-        "lowPrice": "14000",
-        "highPrice": "150000",
-        "availability": "https://schema.org/InStock"
+      "@type": "Organization",
+      "name": "Anthem Biosciences",
+      "url": "https://enterokinase.in/",
+      "logo": "https://enterokinase.in/assets/anthem-logo.png",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "telephone": "+91-80-66724000",
+        "contactType": "customer service",
+        "email": "enterokinase@anthembio.com",
+        "availableLanguage": ["English", "Hindi"]
       }
     }
     </script>
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "Anthem Biosciences",
+      "@type": "WebSite",
+      "name": "Enterokinase by Anthem Biosciences",
       "url": "https://enterokinase.in/",
-      "logo": "https://enterokinase.in/assets/favicon.png",
-      "contactPoint": {
-        "@type": "ContactPoint",
-        "telephone": "+91-80-66724000",
-        "contactType": "customer service",
-        "availableLanguage": ["English", "Hindi"]
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://enterokinase.in/products?q={search_term_string}",
+        "query-input": "required name=search_term_string"
       }
     }
     </script>

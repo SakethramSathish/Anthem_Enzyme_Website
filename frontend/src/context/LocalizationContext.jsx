@@ -31,14 +31,14 @@ export const LocalizationProvider = ({ children }) => {
           const isIndia = fallbackCountry.toLowerCase() === 'india';
           setCurrency(isIndia ? 'INR' : 'USD');
           setPrices(isIndia ? { "50": 180000, "100": 2700, "500": 6300, "5000": 40500 } : { "50": 2000, "100": 30, "500": 70, "5000": 450 });
-          setShippingRates(isIndia ? { "standard": 500, "express": 1200, "dry_ice": 1500 } : { "standard": 10, "express": 30, "dry_ice": 40 });
+          setShippingRates(isIndia ? { "south_india": 500, "north_india": 1000, "outside_india": 5000 } : { "south_india": 10, "north_india": 20, "outside_india": 60 });
         }
       } catch (error) {
         console.error("Failed to init session:", error);
         const isIndia = fallbackCountry.toLowerCase() === 'india';
         setCurrency(isIndia ? 'INR' : 'USD');
         setPrices(isIndia ? { "50": 180000, "100": 2700, "500": 6300, "5000": 40500 } : { "50": 2000, "100": 30, "500": 70, "5000": 450 });
-        setShippingRates(isIndia ? { "standard": 500, "express": 1200, "dry_ice": 1500 } : { "standard": 10, "express": 30, "dry_ice": 40 });
+        setShippingRates(isIndia ? { "south_india": 500, "north_india": 1000, "outside_india": 5000 } : { "south_india": 10, "north_india": 20, "outside_india": 60 });
       } finally {
         setIsLoading(false);
       }

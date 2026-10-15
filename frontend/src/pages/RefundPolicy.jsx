@@ -18,17 +18,17 @@ export default function RefundPolicy() {
         description="Understand the refund and cancellation policy for Enterokinase orders from Anthem Biosciences. Learn about order cancellations and refund processing times."
         canonicalPath="/refund-policy"
       />
-    <div className="min-h-[calc(100vh-72px)] bg-[#F8F9FA] dark:bg-slate-950 transition-colors duration-300 pb-24">
+    <div className="min-h-[calc(100vh-64px)] sm:min-h-[calc(100vh-72px)] bg-[#F8F9FA] dark:bg-slate-950 transition-colors duration-300 pb-16 sm:pb-24">
       {/* Header */}
-      <div className="bg-[#0f1115] dark:bg-white pt-24 pb-20 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
+      <div className="bg-[#0f1115] dark:bg-white pt-12 sm:pt-24 pb-10 sm:pb-20 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
         <div className="max-w-[800px] mx-auto">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-8 h-[1px] bg-slate-600 dark:bg-slate-300"></div>
-            <span className="text-xs font-bold tracking-[0.2em] text-slate-400 dark:text-slate-500 uppercase transition-colors duration-300">Legal</span>
+          <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+            <div className="w-6 sm:w-8 h-[1px] bg-slate-600 dark:bg-slate-300"></div>
+            <span className="text-[11px] sm:text-xs font-bold tracking-[0.2em] text-slate-400 dark:text-slate-500 uppercase transition-colors duration-300">Legal</span>
           </div>
-          <h1 className="text-5xl font-serif font-black text-white dark:text-slate-900 mb-6 tracking-tight transition-colors duration-300">Refund Policy</h1>
-          <p className="text-slate-400 dark:text-slate-600 text-[15px] transition-colors duration-300">
-            Last updated: June 19, 2026 <span className="mx-2">&bull;</span> Effective: June 19, 2026
+          <h1 className="text-3xl sm:text-5xl font-serif font-black text-white dark:text-slate-900 mb-4 sm:mb-6 tracking-tight transition-colors duration-300">Refund Policy</h1>
+          <p className="text-slate-400 dark:text-slate-600 text-xs sm:text-[17px] transition-colors duration-300">
+            Last updated: June 19, 2026 <span className="mx-1.5 sm:mx-2">&bull;</span> Effective: June 19, 2026
           </p>
         </div>
       </div>
@@ -36,7 +36,7 @@ export default function RefundPolicy() {
       <div className="max-w-[800px] mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-10">
         
         {/* Intro Box */}
-        <div className="bg-[#EDF2FE] dark:bg-blue-900/20 border-l-4 border-blue-600 dark:border-blue-500 p-6 sm:p-8 rounded-r-xl shadow-sm mb-8 text-[15px] leading-relaxed text-slate-700 dark:text-slate-300 transition-colors duration-300">
+        <div className="bg-[#EDF2FE] dark:bg-blue-900/20 border-l-4 border-blue-600 dark:border-blue-500 p-6 sm:p-8 rounded-r-xl shadow-sm mb-8 text-[17px] leading-relaxed text-slate-700 dark:text-slate-300 transition-colors duration-300">
           This Refund Policy outlines the terms and conditions regarding refunds and cancellations for products purchased from <strong>Anthem Biosciences Ltd.</strong> ("Anthem", "we", "us", or "our").
         </div>
 
@@ -48,7 +48,7 @@ export default function RefundPolicy() {
               <a 
                 key={item.num} 
                 href={`#section-${item.num}`} 
-                className="text-[14px] text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors flex"
+                className="text-[16px] text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors flex"
               >
                 <span className="font-semibold text-slate-900 dark:text-slate-200 w-5">{item.num}.</span> {item.title}
               </a>
@@ -57,7 +57,7 @@ export default function RefundPolicy() {
         </div>
 
         {/* Content Sections */}
-        <div className="space-y-16 text-[15px] text-slate-600 dark:text-slate-400 leading-relaxed dark-mode-content">
+        <div className="space-y-16 text-[17px] text-slate-600 dark:text-slate-400 leading-relaxed dark-mode-content">
           
           <section id="section-1" className="scroll-mt-24">
             <h2 className="text-2xl font-serif font-black text-slate-900 dark:text-white mb-6 border-b border-slate-200 dark:border-slate-800 pb-4 transition-colors duration-300">1. General Refund Policy</h2>

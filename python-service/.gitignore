@@ -35,3 +35,6 @@ coverage.xml
 .idea/
 .vscode/
 .DS_Store
+
+# Runtime configurations
+pricing_config.json

@@ -37,7 +37,7 @@ function AppContent() {
         
         <NavBar user={user} userData={userData} openAuthModal={openAuthModal} />
 
-        <main className="flex-grow pt-[72px]">
+        <main className="flex-grow pt-[64px] sm:pt-[72px]">
           <Routes>
             <Route path="/" element={<Home user={user} />} />
             <Route path="/about" element={<About />} />

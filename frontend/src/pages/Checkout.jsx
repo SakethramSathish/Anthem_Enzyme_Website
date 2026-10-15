@@ -14,7 +14,7 @@ export default function Checkout({ user, openAuthModal }) {
   const navigate = useNavigate();
   const { cartItems, clearCart } = useCart();
   const { currency, shippingRates, sessionToken, formatCurrency } = useLocalization();
-  const [shippingMethod, setShippingMethod] = useState('standard');
+
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -58,10 +58,18 @@ export default function Checkout({ user, openAuthModal }) {
 
   const subtotal = (cartItems || []).reduce((total, item) => total + (item.price * item.quantity), 0);
   
-  let shippingCost = 0;
-  if (subtotal > 0) {
-    shippingCost = shippingRates?.[shippingMethod] || 0;
+  const southIndiaPrefixes = ['50', '51', '52', '53', '56', '57', '58', '59', '60', '61', '62', '63', '64', '67', '68', '69'];
+  let shippingMethod = 'outside_india';
+  if (country === 'India') {
+    const pinPrefix = pinCode.substring(0, 2);
+    if (pinPrefix && southIndiaPrefixes.includes(pinPrefix)) {
+      shippingMethod = 'south_india';
+    } else {
+      shippingMethod = 'north_india';
+    }
   }
+
+  let shippingCost = shippingRates?.[shippingMethod] || 0;
 
   const gst = currency === 'INR' ? Math.round(subtotal * 0.18) : 0;
   const total = subtotal + shippingCost + gst;
@@ -144,7 +152,7 @@ export default function Checkout({ user, openAuthModal }) {
                 razorpay_signature: response.razorpay_signature,
                 order_data: firestoreOrderData
               }),
-              timeout: 20000
+              timeout: 30000
             });
 
             if (verifyData.success) {
@@ -235,14 +243,14 @@ export default function Checkout({ user, openAuthModal }) {
   return (
     <>
       <SEOHead title="Checkout" noIndex={true} />
-    <div className="min-h-[calc(100vh-72px)] bg-[#F8F9FA] dark:bg-slate-950 transition-colors duration-300 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-[calc(100vh-64px)] sm:min-h-[calc(100vh-72px)] bg-[#F8F9FA] dark:bg-slate-950 transition-colors duration-300 py-6 sm:py-12 px-3 sm:px-6 lg:px-8">
       <div className="max-w-[1200px] mx-auto">
         
         {/* Offline Banner */}
         {!isOnline && (
-          <div className="mb-6 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 flex items-center gap-3">
+          <div className="mb-6 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4 flex items-center gap-3">
             <span className="text-yellow-600 dark:text-yellow-400 text-lg">⚠</span>
-            <p className="text-sm text-yellow-700 dark:text-yellow-300 font-medium">
+            <p className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-300 font-medium">
               You are currently offline. Payment processing requires an active internet connection.
             </p>
           </div>
@@ -251,19 +259,19 @@ export default function Checkout({ user, openAuthModal }) {
         {/* Error Message Modal */}
         {errorMessage && (
           <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in-up">
-            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-red-100 dark:border-red-900/30 max-w-md w-full p-6">
-              <div className="flex items-center gap-4 mb-4">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-red-100 dark:border-red-900/30 max-w-md w-full p-5 sm:p-6">
+              <div className="flex items-center gap-3 sm:gap-4 mb-4">
                 <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center flex-shrink-0">
                   <span className="text-red-600 dark:text-red-400 text-xl font-bold">!</span>
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white">Notice</h3>
               </div>
-              <p className="text-slate-600 dark:text-slate-300 text-[15px] mb-6">
+              <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base mb-6 leading-relaxed">
                 {errorMessage}
               </p>
               <button 
                 onClick={() => setErrorMessage('')} 
-                className="w-full py-3 bg-slate-900 dark:bg-white hover:bg-black dark:hover:bg-slate-200 text-white dark:text-slate-900 font-medium rounded-lg transition-colors"
+                className="w-full py-3.5 bg-slate-900 dark:bg-white hover:bg-black dark:hover:bg-slate-200 text-white dark:text-slate-900 font-semibold rounded-xl transition-colors text-sm sm:text-base"
               >
                 Acknowledge & Close
               </button>
@@ -274,14 +282,14 @@ export default function Checkout({ user, openAuthModal }) {
         {/* Success Message Modal */}
         {successMessage && (
           <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in-up">
-            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-green-100 dark:border-green-900/30 max-w-md w-full p-6">
-              <div className="flex items-center gap-4 mb-4">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-green-100 dark:border-green-900/30 max-w-md w-full p-5 sm:p-6">
+              <div className="flex items-center gap-3 sm:gap-4 mb-4">
                 <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center flex-shrink-0">
                   <span className="text-green-600 dark:text-green-400 text-xl font-bold">✓</span>
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white">Success</h3>
               </div>
-              <p className="text-slate-600 dark:text-slate-300 text-[15px] mb-6">
+              <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base mb-6 leading-relaxed">
                 {successMessage}
               </p>
               <button 
@@ -289,7 +297,7 @@ export default function Checkout({ user, openAuthModal }) {
                   setSuccessMessage('');
                   navigate('/');
                 }} 
-                className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors"
+                className="w-full py-3.5 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-colors text-sm sm:text-base"
               >
                 Okay
               </button>
@@ -299,53 +307,53 @@ export default function Checkout({ user, openAuthModal }) {
 
         {/* Processing Overlay */}
         {isPlacingOrder && (
-          <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center pointer-events-auto">
-            <div className="bg-white dark:bg-slate-900 rounded-xl p-8 shadow-2xl flex flex-col items-center gap-4 max-w-sm mx-4">
+          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center pointer-events-auto p-4">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-8 shadow-2xl flex flex-col items-center gap-4 max-w-sm w-full">
               <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-              <p className="text-slate-700 dark:text-slate-300 font-medium text-center">Processing your payment...</p>
-              <p className="text-xs text-slate-400 text-center">Please do not close this window.</p>
+              <p className="text-slate-900 dark:text-white font-semibold text-center text-sm sm:text-base">Processing your payment...</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 text-center">Please do not close or refresh this window.</p>
             </div>
           </div>
         )}
 
-        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-12">
           
           {/* Left Column - Forms */}
-          <div className="flex-grow space-y-8">
+          <div className="flex-grow space-y-6 sm:space-y-8">
             
             {/* Shipping Details */}
-            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 lg:p-8 transition-colors duration-300">
-              <h2 className="text-[13px] font-bold tracking-[0.1em] text-slate-900 dark:text-white uppercase mb-8">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 sm:p-8 transition-colors duration-300">
+              <h2 className="text-xs sm:text-[13px] font-bold tracking-[0.1em] text-slate-900 dark:text-white uppercase mb-5 pb-3 border-b border-slate-100 dark:border-slate-800">
                 Shipping Details
               </h2>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div>
-                  <label className="block text-[13px] font-bold text-slate-900 dark:text-white mb-2">Full Name</label>
-                  <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Dr. Jane Smith" className="w-full px-4 py-3 bg-[#f8f9fa] dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-sm text-[14px] text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors" />
+                  <label className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-white mb-1.5">Full Name</label>
+                  <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Dr. Jane Smith" className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors" />
                 </div>
                 <div>
-                  <label className="block text-[13px] font-bold text-slate-900 dark:text-white mb-2">Email</label>
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@org.com" className="w-full px-4 py-3 bg-[#f8f9fa] dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-sm text-[14px] text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors" />
+                  <label className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-white mb-1.5">Email</label>
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@org.com" className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors" />
                 </div>
                 <div>
-                  <label className="block text-[13px] font-bold text-slate-900 dark:text-white mb-2">Phone</label>
+                  <label className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-white mb-1.5">Phone</label>
                   <PhoneInput value={phone} onChange={setPhone} />
                 </div>
                 <div>
-                  <label className="block text-[13px] font-bold text-slate-900 dark:text-white mb-2">Organization</label>
-                  <input type="text" value={organization} onChange={(e) => setOrganization(e.target.value)} placeholder="Lab / Institution" className="w-full px-4 py-3 bg-[#f8f9fa] dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-sm text-[14px] text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors" />
+                  <label className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-white mb-1.5">Organization</label>
+                  <input type="text" value={organization} onChange={(e) => setOrganization(e.target.value)} placeholder="Lab / Institution" className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors" />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-[13px] font-bold text-slate-900 dark:text-white mb-2">Address</label>
-                  <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Street address, building, floor" className="w-full px-4 py-3 bg-[#f8f9fa] dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-sm text-[14px] text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors" />
+                  <label className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-white mb-1.5">Address</label>
+                  <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Street address, building, floor" className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors" />
                 </div>
                 <div>
-                  <label className="block text-[13px] font-bold text-slate-900 dark:text-white mb-2">City</label>
-                  <input type="text" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Bengaluru" className="w-full px-4 py-3 bg-[#f8f9fa] dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-sm text-[14px] text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors" />
+                  <label className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-white mb-1.5">City</label>
+                  <input type="text" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Bengaluru" className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors" />
                 </div>
                 <div>
-                  <label className="block text-[13px] font-bold text-slate-900 dark:text-white mb-2">PIN Code</label>
+                  <label className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-white mb-1.5">PIN Code</label>
                   <input 
                     type="text" 
                     value={pinCode} 
@@ -354,75 +362,41 @@ export default function Checkout({ user, openAuthModal }) {
                       if (val.length <= 6) setPinCode(val);
                     }} 
                     placeholder="560001" 
-                    className="w-full px-4 py-3 bg-[#f8f9fa] dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-sm text-[14px] text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors" 
+                    className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors" 
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-[13px] font-bold text-slate-900 dark:text-white mb-2">Country</label>
+                  <label className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-white mb-1.5">Country</label>
                   <CountrySelect value={country} onChange={setCountry} />
                 </div>
               </div>
             </div>
 
             {/* Shipping Method */}
-            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 lg:p-8 transition-colors duration-300">
-              <h2 className="text-[13px] font-bold tracking-[0.1em] text-slate-900 dark:text-white uppercase mb-8">
-                Shipping Method
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 sm:p-8 transition-colors duration-300">
+              <h2 className="text-xs sm:text-[13px] font-bold tracking-[0.1em] text-slate-900 dark:text-white uppercase mb-5 pb-3 border-b border-slate-100 dark:border-slate-800">
+                Shipping Cost
               </h2>
               
-              <div className="space-y-4">
-                <label className={`flex items-start gap-4 p-4 border rounded-sm cursor-pointer transition-colors ${shippingMethod === 'standard' ? 'border-blue-500 bg-[#EDF2FE] dark:bg-blue-900/20' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900'}`}>
-                  <input 
-                    type="radio" 
-                    name="shipping" 
-                    value="standard"
-                    checked={shippingMethod === 'standard'}
-                    onChange={(e) => setShippingMethod(e.target.value)}
-                    className="mt-1 flex-shrink-0"
-                  />
+              <div className="space-y-3">
+                <div className="flex items-start gap-3.5 p-4 rounded-xl border border-blue-500 bg-blue-50/50 dark:bg-blue-900/20 ring-1 ring-blue-500/30 transition-all">
                   <div>
-                    <div className="font-semibold text-[14px] text-slate-900 dark:text-white">Standard (3-5 days)</div>
-                    <div className="text-[13px] text-slate-500 dark:text-slate-400 mt-1">{formatCurrency(shippingRates?.standard || 0)} · Regular cold-chain delivery</div>
+                    <div className="font-semibold text-sm sm:text-base text-slate-900 dark:text-white">
+                      {shippingMethod === 'south_india' ? 'South India Delivery' : shippingMethod === 'north_india' ? 'North India Delivery' : 'International Delivery'}
+                    </div>
+                    <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                      {formatCurrency(shippingCost)} · Automatically calculated based on your location
+                    </div>
                   </div>
-                </label>
-                
-                <label className={`flex items-start gap-4 p-4 border rounded-sm cursor-pointer transition-colors ${shippingMethod === 'express' ? 'border-blue-500 bg-[#EDF2FE] dark:bg-blue-900/20' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900'}`}>
-                  <input 
-                    type="radio" 
-                    name="shipping" 
-                    value="express"
-                    checked={shippingMethod === 'express'}
-                    onChange={(e) => setShippingMethod(e.target.value)}
-                    className="mt-1 flex-shrink-0"
-                  />
-                  <div>
-                    <div className="font-semibold text-[14px] text-slate-900 dark:text-white">Express (1-2 days)</div>
-                    <div className="text-[13px] text-slate-500 dark:text-slate-400 mt-1">{formatCurrency(shippingRates?.express || 0)} · Priority cold-chain delivery</div>
-                  </div>
-                </label>
-                
-                <label className={`flex items-start gap-4 p-4 border rounded-sm cursor-pointer transition-colors ${shippingMethod === 'dry_ice' ? 'border-blue-500 bg-[#EDF2FE] dark:bg-blue-900/20' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900'}`}>
-                  <input 
-                    type="radio" 
-                    name="shipping" 
-                    value="dry_ice"
-                    checked={shippingMethod === 'dry_ice'}
-                    onChange={(e) => setShippingMethod(e.target.value)}
-                    className="mt-1 flex-shrink-0"
-                  />
-                  <div>
-                    <div className="font-semibold text-[14px] text-slate-900 dark:text-white">Dry Ice (Frozen Enzymes)</div>
-                    <div className="text-[13px] text-slate-500 dark:text-slate-400 mt-1">{formatCurrency(shippingRates?.dry_ice || 0)} · For temperature-sensitive products</div>
-                  </div>
-                </label>
+                </div>
               </div>
             </div>
 
-            <div className="flex gap-4">
-              <Link to="/cart" className="w-1/3 flex items-center justify-center py-4 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 rounded-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors font-medium text-[15px]">
+            <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
+              <Link to="/cart" className="w-full sm:w-1/3 flex items-center justify-center py-3.5 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-750 transition-colors font-semibold text-sm">
                 &larr; Back to Cart
               </Link>
-              <button onClick={handlePaymentClick} disabled={isPlacingOrder} className="flex-grow py-4 bg-[#1A4BDB] text-white rounded-sm hover:bg-blue-700 transition-colors font-medium text-[15px] shadow-sm disabled:opacity-70">
+              <button onClick={handlePaymentClick} disabled={isPlacingOrder} className="w-full sm:flex-grow py-3.5 bg-[#1A4BDB] hover:bg-blue-700 text-white rounded-xl transition-all font-bold text-base shadow-sm disabled:opacity-70 active:scale-[0.98]">
                 {isPlacingOrder ? 'Processing...' : 'Place Order \u2192'}
               </button>
             </div>
@@ -430,24 +404,24 @@ export default function Checkout({ user, openAuthModal }) {
           </div>
 
           {/* Right Column - Order Summary */}
-          <div className="w-full lg:w-[400px] flex-shrink-0 lg:pt-0 pt-8">
-            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 lg:p-8 transition-colors duration-300 sticky top-24">
-              <h3 className="text-[13px] font-bold tracking-[0.1em] text-slate-900 dark:text-white uppercase mb-6">
+          <div className="w-full lg:w-[380px] flex-shrink-0 lg:pt-0 pt-2">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 sm:p-8 transition-colors duration-300 sticky top-24">
+              <h3 className="text-xs sm:text-[13px] font-bold tracking-[0.1em] text-slate-900 dark:text-white uppercase mb-5 pb-3 border-b border-slate-100 dark:border-slate-800">
                 Order Summary
               </h3>
               
-              <div className="space-y-4 mb-8">
+              <div className="space-y-3.5 mb-6">
                 {(cartItems || []).map((item) => (
-                  <div key={`${item.id}-${item.unitId}`} className="flex gap-4 border-b border-slate-100 dark:border-slate-800/50 pb-4 last:border-0 transition-colors duration-300">
-                    <div className="w-16 h-16 bg-[#f8f9fa] dark:bg-slate-800 rounded-md flex items-center justify-center p-1 flex-shrink-0">
+                  <div key={`${item.id}-${item.unitId}`} className="flex gap-3 border-b border-slate-100 dark:border-slate-800/50 pb-3 last:border-0 transition-colors duration-300">
+                    <div className="w-14 h-14 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-center p-1 flex-shrink-0 border border-slate-100 dark:border-slate-700">
                       <img src="/assets/enterokinease-vial.jpeg" alt={item.name} className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal" />
                     </div>
-                    <div className="flex-grow flex justify-between">
-                      <div>
-                        <h4 className="text-[13px] font-semibold text-slate-900 dark:text-white">{item.name}</h4>
-                        <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-1">{item.unitLabel} · Qty: {item.quantity}</p>
+                    <div className="flex-grow flex justify-between items-start min-w-0">
+                      <div className="truncate pr-2">
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{item.name}</h4>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{item.unitLabel} · Qty: {item.quantity}</p>
                       </div>
-                      <div className="font-bold text-[14px] text-slate-900 dark:text-white">
+                      <div className="font-bold text-sm text-blue-600 dark:text-blue-400 whitespace-nowrap">
                         {formatCurrency(item.price * item.quantity)}
                       </div>
                     </div>
@@ -455,24 +429,24 @@ export default function Checkout({ user, openAuthModal }) {
                 ))}
               </div>
               
-              <div className="space-y-4 mb-6">
-                <div className="flex justify-between text-[14px]">
+              <div className="space-y-3 mb-6 text-sm">
+                <div className="flex justify-between">
                   <span className="text-slate-600 dark:text-slate-400">Subtotal</span>
-                  <span className="text-slate-900 dark:text-white font-medium">{formatCurrency(subtotal)}</span>
+                  <span className="text-slate-900 dark:text-white font-semibold">{formatCurrency(subtotal)}</span>
                 </div>
-                <div className="flex justify-between text-[14px]">
+                <div className="flex justify-between">
                   <span className="text-slate-600 dark:text-slate-400">Shipping</span>
-                  <span className="text-slate-900 dark:text-white font-medium">{formatCurrency(shippingCost)}</span>
+                  <span className="text-slate-900 dark:text-white font-semibold">{formatCurrency(shippingCost)}</span>
                 </div>
-                <div className="flex justify-between text-[14px]">
+                <div className="flex justify-between">
                   <span className="text-slate-600 dark:text-slate-400">GST {currency === 'INR' ? '(18%)' : ''}</span>
-                  <span className="text-slate-900 dark:text-white font-medium">{formatCurrency(gst)}</span>
+                  <span className="text-slate-900 dark:text-white font-semibold">{formatCurrency(gst)}</span>
                 </div>
               </div>
               
               <div className="border-t border-slate-200 dark:border-slate-800 pt-4 flex justify-between items-center transition-colors duration-300">
-                <span className="font-bold text-slate-900 dark:text-white">Total</span>
-                <span className="font-bold text-[18px] text-slate-900 dark:text-white">{formatCurrency(total)}</span>
+                <span className="font-bold text-slate-900 dark:text-white text-base">Total</span>
+                <span className="font-extrabold text-xl text-blue-600 dark:text-blue-400">{formatCurrency(total)}</span>
               </div>
               
             </div>

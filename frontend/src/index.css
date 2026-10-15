@@ -5,17 +5,27 @@
   --font-sans: 'DM Sans', sans-serif;
   --font-serif: 'DM Serif Display', serif;
 
-  --text-xs: 0.8125rem;  /* 13px (+1px) */
-  --text-sm: 0.9375rem;  /* 15px (+1px) */
-  --text-base: 1.0625rem; /* 17px (+1px) */
-  --text-lg: 1.1875rem;  /* 19px (+1px) */
-  --text-xl: 1.3125rem;  /* 21px (+1px) */
+  --text-xs: 0.875rem;   /* 14px (+2px) */
+  --text-sm: 1.0rem;     /* 16px (+2px) */
+  --text-base: 1.125rem; /* 18px (+2px) */
+  --text-lg: 1.25rem;    /* 20px (+2px) */
+  --text-xl: 1.375rem;   /* 22px (+2px) */
 }
 
 @custom-variant dark (&:is(.dark *));
 
 @layer base {
+  html, body {
+    @apply overflow-x-hidden w-full;
+    -webkit-tap-highlight-color: transparent;
+    text-size-adjust: 100%;
+  }
+
   body {
-    @apply bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100;
+    @apply bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100 min-h-screen;
+  }
+
+  button, a, input, select, textarea {
+    touch-action: manipulation;
   }
 }

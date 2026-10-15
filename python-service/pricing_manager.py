@@ -25,14 +25,14 @@ DEFAULT_PRICING = {
     },
     "shipping": {
         "INR": {
-            "standard": 500,
-            "express": 1200,
-            "dry_ice": 1500
+            "south_india": 500,
+            "north_india": 1000,
+            "outside_india": 5000
         },
         "USD": {
-            "standard": 10,
-            "express": 30,
-            "dry_ice": 40
+            "south_india": 10,
+            "north_india": 20,
+            "outside_india": 60
         }
     }
 }

@@ -85,8 +85,13 @@ export default function ProtectedRoute({ children, allowedRoles, openAuthModal: 
   }
 
   // Check role permissions for authenticated users
-  const firestoreRole = userData?.role?.toLowerCase() || 'user';
-  const hasAllowedRole = allowedRoles && (allowedRoles.includes(role) || allowedRoles.includes(firestoreRole));
+  // Strict role check: Firestore role is the primary source of truth
+  const effectiveRole = (
+    userData?.role?.toLowerCase() === 'admin' ? 'admin' :
+    userData?.role?.toLowerCase() === 'customer' ? 'user' :
+    (userData?.role?.toLowerCase() || role || 'user')
+  );
+  const hasAllowedRole = !allowedRoles || allowedRoles.includes(effectiveRole);
 
   if (!hasAllowedRole) {
     return (

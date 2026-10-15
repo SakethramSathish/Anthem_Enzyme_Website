@@ -132,7 +132,40 @@ export default function Dashboard({ user, userData }) {
       type: 'warning',
       onConfirm: async () => {
         try {
+          // 1. Update Firestore user document
           await updateDoc(doc(db, 'users', userId), { role: newRole });
+
+          // 2. Synchronize Firebase Auth custom claims via backend API
+          try {
+            if (user) {
+              const token = await user.getIdToken();
+              const claimRole = newRole.toLowerCase() === 'admin' ? 'admin' : 'user';
+              const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+              await fetch(`${API_BASE}/api/admin/set-claim`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  target_uid: userId,
+                  role: claimRole
+                })
+              });
+            }
+          } catch (claimErr) {
+            console.warn("Could not sync custom claim via API:", claimErr);
+          }
+
+          // 3. If updating current logged in user, refresh token immediately
+          if (user && user.uid === userId) {
+            try {
+              await user.getIdToken(true);
+            } catch (refErr) {
+              console.warn("Could not force-refresh token for updated user:", refErr);
+            }
+          }
+
           setCustomers(customers.map(c => c.id === userId ? { ...c, role: newRole } : c));
         } catch (err) {
           console.error("Error updating user role:", err);
@@ -341,44 +374,44 @@ export default function Dashboard({ user, userData }) {
   return (
     <>
       <SEOHead title="Dashboard" noIndex={true} />
-    <div className="min-h-[calc(100vh-72px)] bg-[#F8F9FA] dark:bg-slate-950 transition-colors duration-300 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-serif font-black text-slate-900 dark:text-white mb-8 tracking-tight transition-colors duration-300">
+    <div className="min-h-[calc(100vh-64px)] sm:min-h-[calc(100vh-72px)] bg-[#F8F9FA] dark:bg-slate-950 transition-colors duration-300 py-4 sm:py-8 px-3 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto">
+        <h1 className="text-2xl sm:text-4xl font-serif font-black text-slate-900 dark:text-white mb-4 sm:mb-8 tracking-tight transition-colors duration-300">
           Dashboard
         </h1>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm transition-colors duration-300 overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm transition-colors duration-300 overflow-hidden">
           
           {/* Tabs for Admins */}
           {userData?.role === 'Admin' && (
             <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
               <button 
                 onClick={() => setActiveTab('account')}
-                className={`px-8 py-4 text-sm font-bold tracking-[0.05em] uppercase transition-colors ${activeTab === 'account' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}
+                className={`flex-1 sm:flex-initial px-4 sm:px-8 py-3.5 sm:py-4 text-xs sm:text-sm font-bold tracking-[0.05em] uppercase transition-colors text-center ${activeTab === 'account' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 bg-white dark:bg-slate-900' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}
               >
                 My Account
               </button>
               <button 
                 onClick={() => setActiveTab('admin')}
-                className={`px-8 py-4 text-sm font-bold tracking-[0.05em] uppercase transition-colors ${activeTab === 'admin' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}
+                className={`flex-1 sm:flex-initial px-4 sm:px-8 py-3.5 sm:py-4 text-xs sm:text-sm font-bold tracking-[0.05em] uppercase transition-colors text-center ${activeTab === 'admin' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 bg-white dark:bg-slate-900' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}
               >
-                Admin Dashboard
+                Admin Portal
               </button>
             </div>
           )}
 
-          <div className="p-8">
+          <div className="p-4 sm:p-8">
             {activeTab === 'account' ? (
               <>
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 text-2xl font-bold uppercase">
+                <div className="flex items-center gap-4 mb-6 sm:mb-8">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 text-xl sm:text-2xl font-bold uppercase shadow-sm">
                     {user.email ? user.email.charAt(0) : 'U'}
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">{userData?.fullName || user.displayName || 'User'}</h2>
-                    <p className="text-slate-500 dark:text-slate-400">{user.email}</p>
+                    <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">{userData?.fullName || user.displayName || 'User'}</h2>
+                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
                     {userData?.role && (
-                      <span className="inline-block mt-1 px-2.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold rounded-md border border-slate-200 dark:border-slate-700">
+                      <span className="inline-block mt-1 px-2.5 py-0.5 bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-semibold rounded-md border border-blue-200 dark:border-blue-800">
                         {userData.role}
                       </span>
                     )}
@@ -388,9 +421,9 @@ export default function Dashboard({ user, userData }) {
                 <div className="space-y-6">
                   <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-sm font-bold tracking-[0.1em] text-slate-500 dark:text-slate-400 uppercase">Account Details</h3>
+                      <h3 className="text-xs sm:text-sm font-bold tracking-[0.1em] text-slate-500 dark:text-slate-400 uppercase">Account Details</h3>
                       {!isEditing ? (
-                        <button onClick={handleEditClick} className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium transition-colors">
+                        <button onClick={handleEditClick} className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold transition-colors">
                           Edit Details
                         </button>
                       ) : (
@@ -407,73 +440,71 @@ export default function Dashboard({ user, userData }) {
                     
                     {!isEditing ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Full Name</p>
-                          <p className="font-medium text-slate-900 dark:text-white">{userData?.fullName || user.displayName || 'Not specified'}</p>
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800">
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mb-0.5">Full Name</p>
+                          <p className="font-semibold text-slate-900 dark:text-white">{userData?.fullName || user.displayName || 'Not specified'}</p>
                         </div>
-                        <div>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Email</p>
-                          <p className="font-medium text-slate-900 dark:text-white">{user.email}</p>
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800">
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mb-0.5">Email</p>
+                          <p className="font-semibold text-slate-900 dark:text-white truncate">{user.email}</p>
                         </div>
-                        <div>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">User ID</p>
-                          <p className="font-mono text-sm text-slate-900 dark:text-white">{userData?.customUserId || user.uid}</p>
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800">
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mb-0.5">User ID</p>
+                          <p className="font-mono text-xs sm:text-sm text-slate-900 dark:text-white truncate">{userData?.customUserId || user.uid}</p>
                         </div>
-                        <div>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Organization</p>
-                          <p className="font-medium text-slate-900 dark:text-white">{userData?.organization || 'Not specified'}</p>
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800">
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mb-0.5">Organization</p>
+                          <p className="font-semibold text-slate-900 dark:text-white">{userData?.organization || 'Not specified'}</p>
                         </div>
-                        <div>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Phone Number</p>
-                          <p className="font-medium text-slate-900 dark:text-white">{userData?.phone || 'Not specified'}</p>
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800">
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mb-0.5">Phone Number</p>
+                          <p className="font-semibold text-slate-900 dark:text-white">{userData?.phone || 'Not specified'}</p>
                         </div>
-                        <div>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Country</p>
-                          <p className="font-medium text-slate-900 dark:text-white">{userData?.country || 'Not specified'}</p>
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800">
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mb-0.5">Country</p>
+                          <p className="font-semibold text-slate-900 dark:text-white">{userData?.country || 'Not specified'}</p>
                         </div>
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Full Name</label>
-                          <input type="text" value={editForm.fullName} onChange={(e) => setEditForm({...editForm, fullName: e.target.value})} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Full Name</label>
+                          <input type="text" value={editForm.fullName} onChange={(e) => setEditForm({...editForm, fullName: e.target.value})} className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
                         </div>
                         <div>
-                          <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Email (Cannot be changed)</label>
-                          <input type="text" value={user.email} disabled className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md text-sm text-slate-500 dark:text-slate-500 cursor-not-allowed" />
+                          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Email (Cannot be changed)</label>
+                          <input type="text" value={user.email} disabled className="w-full px-3.5 py-2.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-base sm:text-sm text-slate-500 dark:text-slate-500 cursor-not-allowed" />
                         </div>
                         <div>
-                          <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Organization</label>
-                          <input type="text" value={editForm.organization} onChange={(e) => setEditForm({...editForm, organization: e.target.value})} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Organization</label>
+                          <input type="text" value={editForm.organization} onChange={(e) => setEditForm({...editForm, organization: e.target.value})} className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
                         </div>
                         <div>
-                          <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Phone Number</label>
-                          <input type="text" value={editForm.phone} onChange={(e) => setEditForm({...editForm, phone: e.target.value})} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Phone Number</label>
+                          <input type="text" value={editForm.phone} onChange={(e) => setEditForm({...editForm, phone: e.target.value})} className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
                         </div>
-                        <div>
-                          <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Country</label>
-                          <input type="text" value={editForm.country} onChange={(e) => setEditForm({...editForm, country: e.target.value})} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                        <div className="sm:col-span-2">
+                          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Country</label>
+                          <input type="text" value={editForm.country} onChange={(e) => setEditForm({...editForm, country: e.target.value})} className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
                         </div>
                       </div>
                     )}
                   </div>
-
-
                 </div>
               </>
             ) : (
               <>
                 {/* Admin Sub-tabs */}
-                <div className="flex gap-4 mb-6 border-b border-slate-200 dark:border-slate-800 pb-4">
+                <div className="flex gap-2 sm:gap-4 mb-6 border-b border-slate-200 dark:border-slate-800 pb-4">
                   <button
                     onClick={() => setAdminSubTab('customers')}
-                    className={`text-sm font-bold tracking-[0.05em] uppercase transition-colors ${adminSubTab === 'customers' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}
+                    className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold tracking-[0.05em] uppercase transition-colors ${adminSubTab === 'customers' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}
                   >
                     Customers
                   </button>
                   <button
                     onClick={() => { setAdminSubTab('orders'); setSelectedOrder(null); }}
-                    className={`text-sm font-bold tracking-[0.05em] uppercase transition-colors ${adminSubTab === 'orders' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}
+                    className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold tracking-[0.05em] uppercase transition-colors ${adminSubTab === 'orders' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}
                   >
                     Orders
                   </button>
@@ -481,33 +512,48 @@ export default function Dashboard({ user, userData }) {
 
                 {adminSubTab === 'customers' && (
                   <div>
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
-                      <div className="flex items-center gap-3">
-                        <h3 className="text-sm font-bold tracking-[0.1em] text-slate-500 dark:text-slate-400 uppercase whitespace-nowrap">Customer Directory</h3>
-                        <select
-                          value={itemsPerPage}
-                          onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCustomerPage(1); setOrderPage(1); }}
-                          className="px-2 py-1 border border-slate-200 dark:border-slate-700 rounded-lg text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                        >
-                          <option value={10}>10 entries</option>
-                          <option value={25}>25 entries</option>
-                          <option value={50}>50 entries</option>
-                          <option value={100}>100 entries</option>
-                        </select>
-                      </div>
-                      <div className="flex flex-wrap items-center justify-end gap-3 w-full sm:w-auto">
+                    {/* Customer Toolbar */}
+                    <div className="space-y-3 mb-6">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                        <div className="flex items-center justify-between sm:justify-start gap-3">
+                          <h3 className="text-xs sm:text-sm font-bold tracking-[0.1em] text-slate-500 dark:text-slate-400 uppercase whitespace-nowrap">Customer Directory</h3>
+                          <select
+                            value={itemsPerPage}
+                            onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCustomerPage(1); setOrderPage(1); }}
+                            className="px-2.5 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                          >
+                            <option value={10}>10 per page</option>
+                            <option value={25}>25 per page</option>
+                            <option value={50}>50 per page</option>
+                            <option value={100}>100 per page</option>
+                          </select>
+                        </div>
                         <button
                           onClick={exportCustomersToExcel}
                           title="Export to Excel"
-                          className="flex items-center gap-2 px-3 py-2 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50 border border-green-200 dark:border-green-800/50 rounded-lg text-sm font-bold transition-colors"
+                          className="flex items-center justify-center gap-2 px-3 py-2 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50 border border-green-200 dark:border-green-800/50 rounded-xl text-sm font-bold transition-colors shadow-sm"
                         >
-                          <FileSpreadsheet size={18} />
-                          <span className="hidden sm:inline">Export</span>
+                          <FileSpreadsheet size={16} />
+                          <span>Export Excel</span>
                         </button>
+                      </div>
+
+                      {/* Filters and Search Bar */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        <div className="relative sm:col-span-1">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                          <input 
+                            type="text" 
+                            placeholder="Search customer..." 
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                        </div>
                         <select
                           value={countryFilter}
                           onChange={(e) => setCountryFilter(e.target.value)}
-                          className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                          className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
                         >
                           <option value="All">All Countries</option>
                           {uniqueCountries.map(country => (
@@ -517,22 +563,12 @@ export default function Dashboard({ user, userData }) {
                         <select
                           value={roleFilter}
                           onChange={(e) => setRoleFilter(e.target.value)}
-                          className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                          className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
                         >
                           <option value="All">All Roles</option>
                           <option value="Customer">Customers</option>
                           <option value="Admin">Admins</option>
                         </select>
-                        <div className="relative">
-                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                          <input 
-                            type="text" 
-                            placeholder="Search by name or email..." 
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-9 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 w-64"
-                          />
-                        </div>
                       </div>
                     </div>
 
@@ -544,70 +580,134 @@ export default function Dashboard({ user, userData }) {
                         </svg>
                       </div>
                     ) : filteredCustomers.length === 0 ? (
-                      <div className="bg-slate-50 dark:bg-slate-800/50 border border-dashed border-slate-300 dark:border-slate-700 rounded-lg p-12 text-center">
+                      <div className="bg-slate-50 dark:bg-slate-800/50 border border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-8 sm:p-12 text-center">
                         <p className="text-slate-500 dark:text-slate-400 font-medium">No customers found.</p>
                       </div>
                     ) : (
-                      <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
-                        <table className="w-full text-left text-sm whitespace-nowrap">
-                          <thead className="bg-slate-50 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
-                            <tr>
-                              <th className="px-6 py-4 font-semibold">Name</th>
-                              <th className="px-6 py-4 font-semibold">Role</th>
-                              <th className="px-6 py-4 font-semibold">Email</th>
-                              <th className="px-6 py-4 font-semibold">Organization</th>
-                              <th className="px-6 py-4 font-semibold">Phone</th>
-                              <th className="px-6 py-4 font-semibold">Country</th>
-                              <th className="px-6 py-4 font-semibold text-right">Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
-                            {paginatedCustomers.map(c => (
-                              <tr key={c.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                                <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">{c.fullName || 'Unknown'}</td>
-                                <td className="px-6 py-4">
-                                  <span className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold rounded-md border border-slate-200 dark:border-slate-700">
-                                    {c.role || 'Customer'}
-                                  </span>
-                                </td>
-                                <td className="px-6 py-4">{c.email}</td>
-                                <td className="px-6 py-4">{c.organization || '-'}</td>
-                                <td className="px-6 py-4">{c.phone || '-'}</td>
-                                <td className="px-6 py-4">{c.country || '-'}</td>
-                                <td className="px-6 py-4 text-right">
-                                  <div className="flex items-center justify-end gap-2">
-                                    {c.role === 'Admin' ? (
-                                      <button
-                                        onClick={() => handleUpdateRole(c.id, c.email, 'Customer')}
-                                        disabled={c.id === user.uid}
-                                        className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded transition-colors ${c.id === user.uid ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed' : 'bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/30 dark:hover:bg-amber-900/50 text-amber-600 dark:text-amber-400'}`}
-                                      >
-                                        Make Customer
-                                      </button>
-                                    ) : (
-                                      <button
-                                        onClick={() => handleUpdateRole(c.id, c.email, 'Admin')}
-                                        className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 text-xs font-bold uppercase tracking-wider rounded transition-colors"
-                                      >
-                                        Make Admin
-                                      </button>
-                                    )}
-                                    <button
-                                      onClick={() => handleDeleteUser(c.id, c.email)}
-                                      disabled={c.id === user.uid}
-                                      title="Delete User"
-                                      className={`p-1.5 rounded transition-colors ${c.id === user.uid ? 'text-slate-400 dark:text-slate-500 cursor-not-allowed' : 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30'}`}
-                                    >
-                                      <Trash2 size={16} />
-                                    </button>
+                      <>
+                        {/* Mobile Customer Cards (< md) */}
+                        <div className="block md:hidden space-y-3">
+                          {paginatedCustomers.map(c => (
+                            <div key={c.id} className="p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                  <h4 className="font-bold text-slate-900 dark:text-white text-base truncate">{c.fullName || 'Unknown'}</h4>
+                                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">{c.email}</p>
+                                </div>
+                                <span className={`px-2.5 py-0.5 text-[11px] font-bold uppercase rounded-md flex-shrink-0 ${c.role === 'Admin' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300' : 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300'}`}>
+                                  {c.role || 'Customer'}
+                                </span>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-200 dark:border-slate-700">
+                                <div>
+                                  <span className="text-slate-400 block">Org:</span>
+                                  <span className="font-medium text-slate-700 dark:text-slate-300 truncate block">{c.organization || '—'}</span>
+                                </div>
+                                <div>
+                                  <span className="text-slate-400 block">Country:</span>
+                                  <span className="font-medium text-slate-700 dark:text-slate-300 truncate block">{c.country || '—'}</span>
+                                </div>
+                                {c.phone && (
+                                  <div className="col-span-2">
+                                    <span className="text-slate-400 block">Phone:</span>
+                                    <span className="font-medium text-slate-700 dark:text-slate-300">{c.phone}</span>
                                   </div>
-                                </td>
+                                )}
+                              </div>
+
+                              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                                {c.role === 'Admin' ? (
+                                  <button
+                                    onClick={() => handleUpdateRole(c.id, c.email, 'Customer')}
+                                    disabled={c.id === user.uid}
+                                    className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-xl transition-colors text-center ${c.id === user.uid ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed' : 'bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40'}`}
+                                  >
+                                    Make Customer
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => handleUpdateRole(c.id, c.email, 'Admin')}
+                                    className="flex-1 py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-bold uppercase tracking-wider rounded-xl transition-colors border border-blue-200 dark:border-blue-800/40 text-center"
+                                  >
+                                    Make Admin
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => handleDeleteUser(c.id, c.email)}
+                                  disabled={c.id === user.uid}
+                                  title="Delete User"
+                                  className={`w-9 h-9 flex items-center justify-center rounded-xl transition-colors ${c.id === user.uid ? 'text-slate-300 dark:text-slate-700 cursor-not-allowed' : 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 border border-red-200 dark:border-red-800/40'}`}
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Desktop Customer Table (>= md) */}
+                        <div className="hidden md:block overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+                          <table className="w-full text-left text-sm whitespace-nowrap">
+                            <thead className="bg-slate-50 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
+                              <tr>
+                                <th className="px-6 py-4 font-semibold">Name</th>
+                                <th className="px-6 py-4 font-semibold">Role</th>
+                                <th className="px-6 py-4 font-semibold">Email</th>
+                                <th className="px-6 py-4 font-semibold">Organization</th>
+                                <th className="px-6 py-4 font-semibold">Phone</th>
+                                <th className="px-6 py-4 font-semibold">Country</th>
+                                <th className="px-6 py-4 font-semibold text-right">Actions</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                            </thead>
+                            <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+                              {paginatedCustomers.map(c => (
+                                <tr key={c.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                                  <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">{c.fullName || 'Unknown'}</td>
+                                  <td className="px-6 py-4">
+                                    <span className={`px-2.5 py-1 text-xs font-semibold rounded-md border ${c.role === 'Admin' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}>
+                                      {c.role || 'Customer'}
+                                    </span>
+                                  </td>
+                                  <td className="px-6 py-4">{c.email}</td>
+                                  <td className="px-6 py-4">{c.organization || '-'}</td>
+                                  <td className="px-6 py-4">{c.phone || '-'}</td>
+                                  <td className="px-6 py-4">{c.country || '-'}</td>
+                                  <td className="px-6 py-4 text-right">
+                                    <div className="flex items-center justify-end gap-2">
+                                      {c.role === 'Admin' ? (
+                                        <button
+                                          onClick={() => handleUpdateRole(c.id, c.email, 'Customer')}
+                                          disabled={c.id === user.uid}
+                                          className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded transition-colors ${c.id === user.uid ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed' : 'bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/30 dark:hover:bg-amber-900/50 text-amber-600 dark:text-amber-400'}`}
+                                        >
+                                          Make Customer
+                                        </button>
+                                      ) : (
+                                        <button
+                                          onClick={() => handleUpdateRole(c.id, c.email, 'Admin')}
+                                          className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 text-xs font-bold uppercase tracking-wider rounded transition-colors"
+                                        >
+                                          Make Admin
+                                        </button>
+                                      )}
+                                      <button
+                                        onClick={() => handleDeleteUser(c.id, c.email)}
+                                        disabled={c.id === user.uid}
+                                        title="Delete User"
+                                        className={`p-1.5 rounded transition-colors ${c.id === user.uid ? 'text-slate-400 dark:text-slate-500 cursor-not-allowed' : 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30'}`}
+                                      >
+                                        <Trash2 size={16} />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                         {renderPagination(customerPage, totalCustomerPages, setCustomerPage)}
-                      </div>
+                      </>
                     )}
                   </div>
                 )}
@@ -616,8 +716,8 @@ export default function Dashboard({ user, userData }) {
                   <div>
                     {selectedOrder ? (
                       /* Detailed View */
-                      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm transition-colors duration-300 overflow-hidden">
-                        <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/50">
+                      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm transition-colors duration-300 overflow-hidden">
+                        <div className="p-4 sm:p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/50">
                           <button 
                             onClick={() => setSelectedOrder(null)}
                             className="flex items-center text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
@@ -626,20 +726,20 @@ export default function Dashboard({ user, userData }) {
                             Back to Orders
                           </button>
                           <div className="text-right">
-                            <p className="text-sm font-bold text-slate-900 dark:text-white">Invoice ID</p>
-                            <p className="text-xs font-mono text-slate-500 dark:text-slate-400 mt-0.5">{selectedOrder.invoiceId || selectedOrder.shipmentId || selectedOrder.id.slice(0,8)}</p>
+                            <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">Invoice ID</p>
+                            <p className="text-[11px] sm:text-xs font-mono text-slate-500 dark:text-slate-400 mt-0.5">{selectedOrder.invoiceId || selectedOrder.shipmentId || selectedOrder.id.slice(0,8)}</p>
                           </div>
                         </div>
 
-                        <div className="p-8 sm:p-12 space-y-8">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="p-4 sm:p-8 space-y-6 sm:space-y-8">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                             {/* Customer Details */}
-                            <div className="bg-slate-50 dark:bg-slate-800/30 p-6 rounded-xl border border-slate-100 dark:border-slate-800">
-                              <div className="flex items-center gap-3 mb-4">
-                                <User size={20} className="text-teal-600 dark:text-teal-400" />
-                                <h3 className="font-bold text-slate-900 dark:text-white">Customer Details</h3>
+                            <div className="bg-slate-50 dark:bg-slate-800/30 p-4 sm:p-6 rounded-2xl border border-slate-100 dark:border-slate-800">
+                              <div className="flex items-center gap-3 mb-3">
+                                <User size={18} className="text-teal-600 dark:text-teal-400" />
+                                <h3 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">Customer Details</h3>
                               </div>
-                              <div className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
+                              <div className="space-y-2 text-xs sm:text-sm text-slate-600 dark:text-slate-300">
                                 <p><span className="font-semibold text-slate-900 dark:text-white">Name:</span> {selectedOrder.shippingDetails?.fullName || selectedOrder.customerName || 'N/A'}</p>
                                 <p><span className="font-semibold text-slate-900 dark:text-white">Email:</span> {selectedOrder.shippingDetails?.email || selectedOrder.customerEmail || 'N/A'}</p>
                                 <p><span className="font-semibold text-slate-900 dark:text-white">Phone:</span> {selectedOrder.shippingDetails?.phone || 'N/A'}</p>
@@ -650,16 +750,16 @@ export default function Dashboard({ user, userData }) {
                             </div>
 
                             {/* Shipping Details */}
-                            <div className="bg-slate-50 dark:bg-slate-800/30 p-6 rounded-xl border border-slate-100 dark:border-slate-800">
-                              <div className="flex items-center gap-3 mb-4">
-                                <MapPin size={20} className="text-teal-600 dark:text-teal-400" />
-                                <h3 className="font-bold text-slate-900 dark:text-white">Shipping Address</h3>
+                            <div className="bg-slate-50 dark:bg-slate-800/30 p-4 sm:p-6 rounded-2xl border border-slate-100 dark:border-slate-800">
+                              <div className="flex items-center gap-3 mb-3">
+                                <MapPin size={18} className="text-teal-600 dark:text-teal-400" />
+                                <h3 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">Shipping Address</h3>
                               </div>
-                              <div className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
+                              <div className="space-y-2 text-xs sm:text-sm text-slate-600 dark:text-slate-300">
                                 <p>{selectedOrder.shippingDetails?.address || 'N/A'}</p>
                                 <p>{selectedOrder.shippingDetails?.city || 'N/A'} - {selectedOrder.shippingDetails?.pinCode || 'N/A'}</p>
                                 <p>{selectedOrder.shippingDetails?.country || 'N/A'}</p>
-                                <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                                <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
                                   <p><span className="font-semibold text-slate-900 dark:text-white">Delivery Option:</span> {selectedOrder.shippingMethod || 'Standard Delivery'}</p>
                                 </div>
                               </div>
@@ -667,16 +767,16 @@ export default function Dashboard({ user, userData }) {
                           </div>
 
                           {/* Contents */}
-                          <div className="bg-slate-50 dark:bg-slate-800/30 p-6 rounded-xl border border-slate-100 dark:border-slate-800">
+                          <div className="bg-slate-50 dark:bg-slate-800/30 p-4 sm:p-6 rounded-2xl border border-slate-100 dark:border-slate-800">
                             <div className="flex items-center gap-3 mb-4">
-                              <Package size={20} className="text-teal-600 dark:text-teal-400" />
-                              <h3 className="font-bold text-slate-900 dark:text-white">Order Contents</h3>
+                              <Package size={18} className="text-teal-600 dark:text-teal-400" />
+                              <h3 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">Order Contents</h3>
                             </div>
                             <div className="divide-y divide-slate-200 dark:divide-slate-700">
                               {selectedOrder.products?.map((p, i) => (
                                 <div key={i} className="py-3 first:pt-0 last:pb-0 flex items-center justify-between">
-                                  <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-white dark:bg-slate-800 rounded-lg flex items-center justify-center shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden p-1">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-white dark:bg-slate-800 rounded-lg flex items-center justify-center shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden p-1">
                                       <img 
                                         src="/assets/enterokinease-vial.jpeg" 
                                         alt="Product" 
@@ -685,13 +785,13 @@ export default function Dashboard({ user, userData }) {
                                       />
                                     </div>
                                     <div>
-                                      <p className="text-sm font-medium text-slate-900 dark:text-white">{p.name}</p>
+                                      <p className="text-xs sm:text-sm font-medium text-slate-900 dark:text-white">{p.name}</p>
                                       {p.unitLabel && (
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{p.unitLabel}</p>
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{p.unitLabel}</p>
                                       )}
                                     </div>
                                   </div>
-                                  <div className="text-sm font-bold text-slate-900 dark:text-white">
+                                  <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                                     Qty: {p.quantity}
                                   </div>
                                 </div>
@@ -701,38 +801,38 @@ export default function Dashboard({ user, userData }) {
 
                           {/* Status Update */}
                           {selectedOrder.status !== 'Cancelled' ? (
-                            <div className="bg-teal-50 dark:bg-teal-900/10 p-6 rounded-xl border border-teal-100 dark:border-teal-900/30">
-                              <div className="flex items-center gap-3 mb-4">
-                                <Truck size={20} className="text-teal-600 dark:text-teal-400" />
-                                <h3 className="font-bold text-slate-900 dark:text-white">Update Delivery Status</h3>
+                            <div className="bg-teal-50 dark:bg-teal-900/10 p-4 sm:p-6 rounded-2xl border border-teal-100 dark:border-teal-900/30">
+                              <div className="flex items-center gap-3 mb-3">
+                                <Truck size={18} className="text-teal-600 dark:text-teal-400" />
+                                <h3 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">Update Delivery Status</h3>
                               </div>
-                              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                                <div className="flex-grow w-full">
+                              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                                <div className="flex-grow">
                                   <label className="sr-only">Delivery Status</label>
                                   <select
                                     value={getDisplayStatus(selectedOrder.status)}
                                     onChange={(e) => handleStatusChange(selectedOrder.id, e.target.value)}
-                                    className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-sm rounded-lg focus:ring-teal-500 focus:border-teal-500 block w-full p-3 shadow-sm cursor-pointer transition-colors"
+                                    className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-sm rounded-xl focus:ring-teal-500 focus:border-teal-500 block w-full p-3 shadow-sm cursor-pointer transition-colors"
                                   >
                                     {STATUS_OPTIONS.map(status => (
                                       <option key={status} value={status}>{status}</option>
                                     ))}
                                   </select>
                                 </div>
-                                <div className="flex-shrink-0 text-sm text-slate-500 dark:text-slate-400">
+                                <div className="text-xs text-slate-500 dark:text-slate-400 text-center sm:text-left">
                                   Changes save automatically.
                                 </div>
                               </div>
                             </div>
                           ) : (
-                            <div className="bg-red-50 dark:bg-red-900/10 p-6 rounded-xl border border-red-200 dark:border-red-900/30">
-                              <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center flex-shrink-0">
-                                  <X size={24} className="text-red-600 dark:text-red-400" />
+                            <div className="bg-red-50 dark:bg-red-900/10 p-4 sm:p-6 rounded-2xl border border-red-200 dark:border-red-900/30">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                                  <X size={20} className="text-red-600 dark:text-red-400" />
                                 </div>
                                 <div>
-                                  <h3 className="text-lg font-bold text-red-800 dark:text-red-300">Order: Cancelled</h3>
-                                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">This shipment has been cancelled by the customer. No further delivery actions are required.</p>
+                                  <h3 className="text-sm sm:text-base font-bold text-red-800 dark:text-red-300">Order: Cancelled</h3>
+                                  <p className="text-xs sm:text-sm text-red-600 dark:text-red-400 mt-0.5">This shipment has been cancelled by the customer. No further delivery actions are required.</p>
                                 </div>
                               </div>
                             </div>
@@ -744,33 +844,33 @@ export default function Dashboard({ user, userData }) {
                       /* List View */
                       <div>
                         <div className="py-2">
-                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
-                            <div className="flex items-center gap-3">
-                              <h3 className="text-sm font-bold tracking-[0.1em] text-slate-500 dark:text-slate-400 uppercase whitespace-nowrap">Orders Directory</h3>
+                          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between mb-6 gap-3">
+                            <div className="flex items-center justify-between sm:justify-start gap-3">
+                              <h3 className="text-xs sm:text-sm font-bold tracking-[0.1em] text-slate-500 dark:text-slate-400 uppercase whitespace-nowrap">Orders Directory</h3>
                               <select
                                 value={itemsPerPage}
                                 onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCustomerPage(1); setOrderPage(1); }}
-                                className="px-2 py-1 border border-slate-200 dark:border-slate-700 rounded-lg text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                                className="px-2.5 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
                               >
-                                <option value={10}>10 entries</option>
-                                <option value={25}>25 entries</option>
-                                <option value={50}>50 entries</option>
-                                <option value={100}>100 entries</option>
+                                <option value={10}>10 per page</option>
+                                <option value={25}>25 per page</option>
+                                <option value={50}>50 per page</option>
+                                <option value={100}>100 per page</option>
                               </select>
                             </div>
-                            <div className="flex flex-wrap items-center justify-end gap-3 w-full sm:w-auto">
-                            <button
-                              onClick={exportOrdersToExcel}
-                              title="Export to Excel"
-                              className="flex items-center gap-2 px-3 py-2 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50 border border-green-200 dark:border-green-800/50 rounded-lg text-sm font-bold transition-colors"
-                            >
-                              <FileSpreadsheet size={18} />
-                              <span className="hidden sm:inline">Export</span>
-                            </button>
-                            <button onClick={fetchOrders} className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors font-medium">
-                              Refresh
-                            </button>
-                          </div>
+                            <div className="flex items-center justify-end gap-3">
+                              <button
+                                onClick={exportOrdersToExcel}
+                                title="Export to Excel"
+                                className="flex items-center gap-2 px-3 py-2 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50 border border-green-200 dark:border-green-800/50 rounded-xl text-sm font-bold transition-colors shadow-sm"
+                              >
+                                <FileSpreadsheet size={16} />
+                                <span>Export Excel</span>
+                              </button>
+                              <button onClick={fetchOrders} className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors font-medium">
+                                Refresh
+                              </button>
+                            </div>
                           </div>
 
                           {loadingOrders ? (
@@ -781,85 +881,153 @@ export default function Dashboard({ user, userData }) {
                               </svg>
                             </div>
                           ) : orders.length === 0 ? (
-                            <div className="bg-slate-50 dark:bg-slate-800/50 border border-dashed border-slate-300 dark:border-slate-700 rounded-lg p-12 text-center">
+                            <div className="bg-slate-50 dark:bg-slate-800/50 border border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-8 sm:p-12 text-center">
                               <p className="text-slate-500 dark:text-slate-400 font-medium">No active orders found.</p>
-                              <p className="text-sm text-slate-400 dark:text-slate-500 mt-2">When customers place orders, they will appear here.</p>
+                              <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-500 mt-1">When customers place orders, they will appear here.</p>
                             </div>
                           ) : (
-                            <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
-                              <table className="w-full text-left text-sm whitespace-nowrap">
-                                <thead className="bg-slate-50 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
-                                  <tr>
-                                    <th className="px-6 py-4 font-semibold">Invoice ID</th>
-                                    <th className="px-6 py-4 font-semibold">Customer</th>
-                                    <th className="px-6 py-4 font-semibold">Current Status</th>
-                                    <th className="px-6 py-4 font-semibold text-right">Action</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
-                                  {paginatedOrders.map(order => (
-                                    <tr key={order.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                                      <td className="px-6 py-4">
-                                        <div className="font-mono font-medium text-slate-900 dark:text-white">{order.invoiceId || order.shipmentId || order.id.slice(0, 8)}</div>
-                                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{new Date(order.createdAt).toLocaleDateString()}</div>
-                                      </td>
-                                      <td className="px-6 py-4">
-                                        <div className="font-medium text-slate-900 dark:text-white">{order.customerName || 'Unknown'}</div>
-                                      </td>
-                                      <td className="px-6 py-4">
-                                        {(() => {
-                                          const displayStatus = getDisplayStatus(order.status);
-                                          const isCancelled = displayStatus === 'Cancelled';
-                                          const isDelivered = displayStatus === 'Delivered';
-                                          const colorClass = isCancelled 
-                                            ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-                                            : isDelivered
-                                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                                            : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
-                                          
-                                          return (
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colorClass}`}>
-                                              {displayStatus}
-                                            </span>
-                                          );
-                                        })()}
-                                      </td>
-                                      <td className="px-6 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-2">
+                            <>
+                              {/* Mobile Orders Card Stack (< md) */}
+                              <div className="block md:hidden space-y-3">
+                                {paginatedOrders.map(order => {
+                                  const displayStatus = getDisplayStatus(order.status);
+                                  const isCancelled = displayStatus === 'Cancelled';
+                                  const isDelivered = displayStatus === 'Delivered';
+                                  const colorClass = isCancelled 
+                                    ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                                    : isDelivered
+                                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                    : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+                                  const canDelete = displayStatus === 'Order Placed' || displayStatus === 'Cancelled';
+
+                                  return (
+                                    <div key={order.id} className="p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div>
+                                          <div className="font-mono font-bold text-slate-900 dark:text-white text-sm">
+                                            {order.invoiceId || order.shipmentId || order.id.slice(0, 8)}
+                                          </div>
+                                          <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                            {new Date(order.createdAt).toLocaleDateString()}
+                                          </div>
+                                        </div>
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${colorClass}`}>
+                                          {displayStatus}
+                                        </span>
+                                      </div>
+
+                                      <div className="text-xs text-slate-600 dark:text-slate-300 pt-2 border-t border-slate-200 dark:border-slate-700">
+                                        <span className="text-slate-400">Customer: </span>
+                                        <span className="font-medium text-slate-900 dark:text-white">{order.customerName || 'Unknown'}</span>
+                                      </div>
+
+                                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                                        <button
+                                          onClick={() => setSelectedOrder(order)}
+                                          className="w-full py-2.5 text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600 rounded-xl transition-colors shadow-sm text-center"
+                                        >
+                                          Shipment
+                                        </button>
+                                        <button
+                                          onClick={() => navigate('/invoice', { state: { orderData: order, paymentId: order.paymentId || 'N/A' } })}
+                                          className="w-full py-2.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-xl transition-colors shadow-sm text-center"
+                                        >
+                                          Invoice
+                                        </button>
+                                      </div>
+
+                                      {canDelete && (
+                                        <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex justify-end">
                                           <button
-                                            onClick={() => setSelectedOrder(order)}
-                                            className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600 rounded-lg transition-colors shadow-sm"
+                                            onClick={() => handleDeleteOrder(order.id, order.invoiceId)}
+                                            className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1 font-medium py-1"
                                           >
-                                            View Shipment
+                                            <Trash2 size={14} />
+                                            <span>Delete Order Record</span>
                                           </button>
-                                          <button
-                                            onClick={() => navigate('/invoice', { state: { orderData: order, paymentId: order.paymentId || 'N/A' } })}
-                                            className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors shadow-sm"
-                                          >
-                                            View Invoice
-                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              {/* Desktop Orders Table (>= md) */}
+                              <div className="hidden md:block overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+                                <table className="w-full text-left text-sm whitespace-nowrap">
+                                  <thead className="bg-slate-50 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
+                                    <tr>
+                                      <th className="px-6 py-4 font-semibold">Invoice ID</th>
+                                      <th className="px-6 py-4 font-semibold">Customer</th>
+                                      <th className="px-6 py-4 font-semibold">Current Status</th>
+                                      <th className="px-6 py-4 font-semibold text-right">Action</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+                                    {paginatedOrders.map(order => (
+                                      <tr key={order.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                                        <td className="px-6 py-4">
+                                          <div className="font-mono font-medium text-slate-900 dark:text-white">{order.invoiceId || order.shipmentId || order.id.slice(0, 8)}</div>
+                                          <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{new Date(order.createdAt).toLocaleDateString()}</div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                          <div className="font-medium text-slate-900 dark:text-white">{order.customerName || 'Unknown'}</div>
+                                        </td>
+                                        <td className="px-6 py-4">
                                           {(() => {
                                             const displayStatus = getDisplayStatus(order.status);
-                                            const canDelete = displayStatus === 'Order Placed' || displayStatus === 'Cancelled';
+                                            const isCancelled = displayStatus === 'Cancelled';
+                                            const isDelivered = displayStatus === 'Delivered';
+                                            const colorClass = isCancelled 
+                                              ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                                              : isDelivered
+                                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                              : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+                                            
                                             return (
-                                              <button
-                                                onClick={() => canDelete && handleDeleteOrder(order.id, order.invoiceId)}
-                                                disabled={!canDelete}
-                                                title={canDelete ? "Delete Order" : "Cannot delete active shipments"}
-                                                className={`p-1.5 ml-2 rounded transition-colors ${!canDelete ? 'text-slate-300 dark:text-slate-700 cursor-not-allowed' : 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30'}`}
-                                              >
-                                                <Trash2 size={16} />
-                                              </button>
+                                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colorClass}`}>
+                                                {displayStatus}
+                                              </span>
                                             );
                                           })()}
-                                        </div>
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                          <div className="flex items-center justify-end gap-2">
+                                            <button
+                                              onClick={() => setSelectedOrder(order)}
+                                              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600 rounded-lg transition-colors shadow-sm"
+                                            >
+                                              View Shipment
+                                            </button>
+                                            <button
+                                              onClick={() => navigate('/invoice', { state: { orderData: order, paymentId: order.paymentId || 'N/A' } })}
+                                              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors shadow-sm"
+                                            >
+                                              View Invoice
+                                            </button>
+                                            {(() => {
+                                              const displayStatus = getDisplayStatus(order.status);
+                                              const canDelete = displayStatus === 'Order Placed' || displayStatus === 'Cancelled';
+                                              return (
+                                                <button
+                                                  onClick={() => canDelete && handleDeleteOrder(order.id, order.invoiceId)}
+                                                  disabled={!canDelete}
+                                                  title={canDelete ? "Delete Order" : "Cannot delete active shipments"}
+                                                  className={`p-1.5 ml-2 rounded transition-colors ${!canDelete ? 'text-slate-300 dark:text-slate-700 cursor-not-allowed' : 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30'}`}
+                                                >
+                                                  <Trash2 size={16} />
+                                                </button>
+                                              );
+                                            })()}
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
                               {renderPagination(orderPage, totalOrderPages, setOrderPage)}
-                            </div>
+                            </>
                           )}
                         </div>
                       </div>

@@ -41,7 +41,7 @@ export default function NotFound({ openAuthModal: propOpenAuthModal }) {
             Looking for something?
           </h1>
 
-          <p className="text-[15px] text-slate-600 dark:text-slate-400 mb-8 leading-relaxed">
+          <p className="text-[17px] text-slate-600 dark:text-slate-400 mb-8 leading-relaxed">
             The page you requested may be protected or require you to log in. Please sign in to verify your access or return to the product catalogue.
           </p>
 

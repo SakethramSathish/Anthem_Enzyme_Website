@@ -4,7 +4,7 @@ import hashlib
 import json
 import logging
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, Header, Request
+from fastapi import APIRouter, Depends, HTTPException, Header, Request, BackgroundTasks
 from pydantic import BaseModel, Field
 import razorpay
 import jwt
@@ -49,7 +49,7 @@ class CartItem(BaseModel):
 
 class CreateOrderRequest(BaseModel):
     cartItems: list[CartItem] = Field(..., min_length=1, max_length=100)
-    shippingMethod: str = Field(..., pattern="^(standard|express|dry_ice)$")
+    shippingMethod: str = Field(..., pattern="^(south_india|north_india|outside_india)$")
     currency: str = Field(..., pattern="^(INR|USD)$")
 
 def get_db_price(product_id: str, unit_id: str, client_price: int, currency: str) -> int:
@@ -163,6 +163,47 @@ def create_order(
 
     return order
 
+def send_order_notification_email(order_data: dict):
+    """Sends order confirmation notification email in the background without blocking the HTTP response."""
+    try:
+        from email_service import send_email
+        receiver_email = os.getenv("NOTIFICATION_EMAIL", "enterokinase@anthembio.com")
+        
+        products_text = ""
+        for p in order_data.get('products', []):
+            products_text += f"- {p.get('name', 'Product')} x{p.get('quantity', 1)} ({p.get('unitLabel', '')})\n"
+            
+        subject = f"New Order Placed: {order_data.get('invoiceId', 'Unknown')}"
+        body = f"""New order has been placed on Anthem Enzyme Website!
+
+Invoice ID: {order_data.get('invoiceId', 'Unknown')}
+Payment ID: {order_data.get('paymentId', 'Unknown')}
+Total Amount: {order_data.get('currency', 'INR')} {order_data.get('totals', {}).get('total', 0)}
+
+Customer Details:
+Name: {order_data.get('customerName', order_data.get('shippingDetails', {}).get('fullName', 'Unknown'))}
+Email: {order_data.get('customerEmail', order_data.get('shippingDetails', {}).get('email', 'Unknown'))}
+Phone: {order_data.get('shippingDetails', {}).get('phone', 'Unknown')}
+Organization: {order_data.get('shippingDetails', {}).get('organization', 'N/A')}
+
+Shipping Details:
+Method: {order_data.get('shippingMethod', 'Standard')}
+Address: {order_data.get('shippingDetails', {}).get('address', 'Unknown')}
+City: {order_data.get('shippingDetails', {}).get('city', 'Unknown')}
+PIN Code: {order_data.get('shippingDetails', {}).get('pinCode', 'Unknown')}
+Country: {order_data.get('shippingDetails', {}).get('country', 'Unknown')}
+
+Order Contents:
+{products_text}"""
+        
+        customer_email = order_data.get('customerEmail', order_data.get('shippingDetails', {}).get('email'))
+        success = send_email(subject=subject, body=body, reply_to=customer_email, recipient=receiver_email)
+        if not success:
+            logger.error(f"Failed to send order notification email for invoice {order_data.get('invoiceId')}")
+    except Exception as email_err:
+        logger.error(f"Failed to send order email: {email_err}")
+
+
 class VerifyPaymentRequest(BaseModel):
     razorpay_order_id: str = Field(..., min_length=5, max_length=50)
     razorpay_payment_id: str = Field(..., min_length=5, max_length=50)
@@ -171,7 +212,12 @@ class VerifyPaymentRequest(BaseModel):
 
 @router.post("/api/verify-payment")
 @limiter.limit("10/hour")
-def verify_payment(request: Request, payload: VerifyPaymentRequest, caller: dict = Depends(verify_firebase_token)):
+def verify_payment(
+    request: Request, 
+    payload: VerifyPaymentRequest, 
+    background_tasks: BackgroundTasks, 
+    caller: dict = Depends(verify_firebase_token)
+):
     """Synchronous verification with constant-time signature comparison."""
     secret = os.getenv("RAZORPAY_KEY_SECRET")
     if not secret:
@@ -194,56 +240,8 @@ def verify_payment(request: Request, payload: VerifyPaymentRequest, caller: dict
         
         try:
             get_db().collection("orders").add(order_data)
-            
-            # Send notification email
-            try:
-                smtp_email = os.getenv("SMTP_EMAIL")
-                smtp_password = os.getenv("SMTP_PASSWORD")
-                if smtp_email and smtp_password:
-                    import smtplib
-                    from email.mime.text import MIMEText
-                    from email.mime.multipart import MIMEMultipart
-                    
-                    msg = MIMEMultipart()
-                    msg['From'] = smtp_email
-                    msg['To'] = "enterokinase@anthembio.com"
-                    msg['Subject'] = f"New Order Placed: {order_data.get('invoiceId', 'Unknown')}"
-                    
-                    products_text = ""
-                    for p in order_data.get('products', []):
-                        products_text += f"- {p.get('name', 'Product')} x{p.get('quantity', 1)} ({p.get('unitLabel', '')})\n"
-                        
-                    body = f"""New order has been placed on Anthem Enzyme Website!
-
-Invoice ID: {order_data.get('invoiceId', 'Unknown')}
-Payment ID: {order_data.get('paymentId', 'Unknown')}
-Total Amount: {order_data.get('currency', 'INR')} {order_data.get('totals', {}).get('total', 0)}
-
-Customer Details:
-Name: {order_data.get('customerName', order_data.get('shippingDetails', {}).get('fullName', 'Unknown'))}
-Email: {order_data.get('customerEmail', order_data.get('shippingDetails', {}).get('email', 'Unknown'))}
-Phone: {order_data.get('shippingDetails', {}).get('phone', 'Unknown')}
-Organization: {order_data.get('shippingDetails', {}).get('organization', 'N/A')}
-
-Shipping Details:
-Method: {order_data.get('shippingMethod', 'Standard')}
-Address: {order_data.get('shippingDetails', {}).get('address', 'Unknown')}
-City: {order_data.get('shippingDetails', {}).get('city', 'Unknown')}
-PIN Code: {order_data.get('shippingDetails', {}).get('pinCode', 'Unknown')}
-Country: {order_data.get('shippingDetails', {}).get('country', 'Unknown')}
-
-Order Contents:
-{products_text}"""
-                    msg.attach(MIMEText(body, 'plain'))
-                    
-                    server = smtplib.SMTP('smtp.gmail.com', 587)
-                    server.starttls()
-                    server.login(smtp_email, smtp_password)
-                    server.sendmail(smtp_email, "enterokinase@anthembio.com", msg.as_string())
-                    server.quit()
-            except Exception as email_err:
-                logger.error(f"Failed to send order email: {email_err}")
-
+            # Queue email in background so the user receives an instant response
+            background_tasks.add_task(send_order_notification_email, order_data)
         except Exception as e:
             logger.error(f"Firestore write failed during payment verification: {e}")
             raise HTTPException(status_code=503, detail="Order saved but database write failed. Contact support.")
